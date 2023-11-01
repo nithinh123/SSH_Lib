@@ -14,7 +14,7 @@ class TestSSH:
         exit_status, out, error = self.ssh_python.execute_command(f"cat {file_path}")
         print(exit_status, out, error)
         print(self.ssh_python.check_file(file_path))
-        print(self.ssh_python.download_file(file_path, "D:\/"))
+        print(self.ssh_python.download_file(file_path, "D:\\"))
         return True, "Success"
 
 

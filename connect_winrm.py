@@ -19,4 +19,4 @@ class TestWinRM:
 
 
 if __name__ == "__main__":
-    status, message = TestWinRM("localhost", "devuser", "12345").main()
+    status, message = TestWinRM("localhost", "test", "test").main()
