@@ -1,53 +1,103 @@
-import pypsrp.exceptions
 from pypsrp.client import Client
-
-Fail = False
-Pass = True
+from pypsrp.exceptions import AuthenticationError, WinRMTransportError, WinRMError
 
 
 class WinRmPython:
+    """
+    A class to execute PowerShell scripts on a remote Windows server using pypsrp.
+    """
 
-    def __init__(self, host_ip, username, password):
-        self.client = None
-        self.host_ip = host_ip
+    def __init__(self, server, username, password, auth="ntlm", ssl=False):
+        """
+        Initializes the RemotePowerShellExecutor with server details, credentials, and authentication method.
+
+        Parameters:
+        server (str): The IP address or hostname of the remote server.
+        username (str): The username for authentication.
+        password (str): The password for authentication.
+        auth (str): The authentication method ('ntlm', 'kerberos', or 'basic').
+        ssl (bool): Whether to use SSL for the connection.
+        """
+        self.server = server
         self.username = username
         self.password = password
-        self.connect_host()
+        self.auth = auth
+        self.ssl = ssl
+        self.client = None
 
-    def connect_host(self):
+    def establish_connection(self):
+        """
+        Establishes a PSRP connection to the remote server.
+        """
         try:
-            print("Establishing WinRM connection.....")
-            self.client = Client(server=self.host_ip, username=self.username, password=self.password)
-        except pypsrp.exceptions.AuthenticationError:
-            print("Authentication Error. Please check the credentails provided")
-        except pypsrp.exceptions.WinRMTransportError:
-            print("WinRMTransportError")
-        except pypsrp.exceptions.WinRMError:
-            print("WinRMError")
+            self.client = Client(
+                self.server,
+                username=self.username,
+                password=self.password,
+                auth=self.auth,
+                ssl=self.ssl
+            )
+            print(f"Successfully established connection to {self.server} using {self.auth} authentication")
+        except AuthenticationError:
+            print("Authentication Error. Please check the credentials provided.")
+        except WinRMTransportError:
+            print("WinRM Transport Error. Please check the connection and server configuration.")
+        except WinRMError:
+            print("WinRM Error occurred.")
+        except AuthenticationError:
+            print("Authentication Error. Please check the credentials provided.")
+        except WinRMTransportError:
+            print("WinRM Transport Error. Please check the connection and server configuration.")
+        except WinRMError as e:
+            print("WinRM Error occurred. Error: ", str(e))
         except Exception as e:
-            print(self.host_ip, " - Exception in connecting to the server")
+            print(self.server, " - An unexpected error occurred while connecting to the server.")
             print("Exception: ", str(e))
-            self.client = None
-        return self.client
 
-    def execute_command(self, command):
-        stdout, stderr, rc = self.client.execute_cmd(command)
-        stdout, stderr, rc = self.client.execute_cmd("powershell.exe gci $pwd")
-        sanitised_stderr = self.client.sanitise_clixml(stderr)
+    def execute_script(self, script):
+        """
+        Executes a PowerShell script on the remote server.
 
-    def execute_ps_script(self, script_path):
-        # execute a PowerShell script
-        output, streams, had_errors = self.client.execute_ps('''$path = "%s"
-        if (Test-Path -Path $path) {
-            Remove-Item -Path $path -Force -Recurse
-            }
-            New-Item -Path $path -ItemType Directory''' % script_path)
-        output, streams, had_errors = self.client.execute_ps("New-Item -Path C:\\temp\\folder -ItemType Directory")
+        Parameters:
+        script (str): The PowerShell script content.
 
-    def upload_file(self, local_path, remote_path):
-        # copy a file from the local host to the remote host
-        self.client.copy("~/file.txt", "C:\\temp\\file.txt")
+        Returns:
+        dict: A dictionary containing the script's output and status.
+        """
+        if self.client is None:
+            raise RuntimeError("Connection not established. Call 'establish_connection' first.")
 
-    def download_file(self, remote_path, local_path):
-        # fetch a file from the remote host to the local host
-        self.client.fetch("C:\\temp\\file.txt", "~/file.txt")
+        try:
+            # Execute the PowerShell script
+            output, streams, had_errors = self.client.execute_ps(script)
+
+            if had_errors:
+                error_message = "\n".join([str(err) for err in streams.error])
+                return {
+                    "status": "error",
+                    "error_message": error_message
+                }
+            else:
+                return {
+                    "status": "success",
+                    "output": output
+                }
+        except Exception as e:
+            raise RuntimeError(f"Error executing script: {e}") from e
+
+    @staticmethod
+    def read_script(file_path):
+        """
+        Reads a PowerShell script from a file.
+
+        Parameters:
+        file_path (str): The path to the PowerShell script file.
+
+        Returns:
+        str: The content of the PowerShell script.
+        """
+        try:
+            with open(file_path, 'r', encoding='utf-8') as file:
+                return file.read()
+        except OSError as e:
+            raise RuntimeError(f"Error reading script file: {e}") from e
