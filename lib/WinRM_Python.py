@@ -86,18 +86,22 @@ class WinRmPython:
             raise RuntimeError(f"Error executing script: {e}") from e
 
     @staticmethod
-    def read_script(file_path):
+    def read_script(file_path, **kwargs):
         """
-        Reads a PowerShell script from a file.
+        Reads a PowerShell script from a file and optionally formats it with parameters.
 
         Parameters:
         file_path (str): The path to the PowerShell script file.
+        kwargs (dict): Parameters to format the script with.
 
         Returns:
-        str: The content of the PowerShell script.
+        str: The content of the PowerShell script, formatted with the provided parameters.
         """
         try:
             with open(file_path, 'r', encoding='utf-8') as file:
-                return file.read()
+                script = file.read()
+                if kwargs:
+                    script = script.format(**kwargs)
+                return script
         except OSError as e:
             raise RuntimeError(f"Error reading script file: {e}") from e
