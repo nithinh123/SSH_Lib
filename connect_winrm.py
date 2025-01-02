@@ -16,10 +16,12 @@ if __name__ == "__main__":
 
         # Establish connection
         executor.establish_connection()
-
+        params = {
+                "FirstName": "Test",
+                "LastName": "User",
+        }
         # Read the PowerShell script
-        script_content = executor.read_script(script_path)
-
+        script_content = executor.read_script(script_path, **params)
         # Execute the PowerShell script
         result = executor.execute_script(script_content)
 
