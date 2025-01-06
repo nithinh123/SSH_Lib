@@ -42,12 +42,6 @@ class WinRmPython:
             print("Authentication Error. Please check the credentials provided.")
         except WinRMTransportError:
             print("WinRM Transport Error. Please check the connection and server configuration.")
-        except WinRMError:
-            print("WinRM Error occurred.")
-        except AuthenticationError:
-            print("Authentication Error. Please check the credentials provided.")
-        except WinRMTransportError:
-            print("WinRM Transport Error. Please check the connection and server configuration.")
         except WinRMError as e:
             print("WinRM Error occurred. Error: ", str(e))
         except Exception as e:
